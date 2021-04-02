@@ -25,6 +25,12 @@
 #include <BLEServer.h>
 #include <BLEUtils.h>
 #include <BLE2902.h>
+#include <EEPROM.h>
+
+//the current address in the EEPROM (i.e. which byte
+//we are going to write next)
+int addr = 0;
+#define EEPROM_SIZE 4000000
 
 BLECharacteristic *pCharacteristic;
 bool deviceConnected = false;
@@ -92,6 +98,19 @@ void setup() {
 
   pinMode(LED, OUTPUT);
   pinMode(readPin, INPUT);
+  if (!EEPROM.begin(EEPROM_SIZE))
+  {
+    Serial.println("failed to initialise EEPROM");
+    delay(1000000);
+  }
+  Serial.println(" bytes read from Flash . Values are:");
+  for (int i = 0; i < EEPROM_SIZE; i++)
+  {
+    Serial.print(byte(EEPROM.read(i))); Serial.print(" ");
+  }
+  Serial.println();
+  Serial.println("writing sensor value in memory");
+  
   // Create the BLE Device
   BLEDevice::init("ESP32 UART Test"); // Give it a name
 
@@ -138,6 +157,7 @@ void loop() {
     pCharacteristic->setValue(txString);
     
     pCharacteristic->notify(); // Send the value to the app!
+    EEPROM.write(addr, txString);
     Serial.print("*** Sent Value: ");
     Serial.print(txString);
     Serial.println(" ***");
